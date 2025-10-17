@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders - Energy Quiz Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Basic CSS for the game screen */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            font-family: monospace;
+        }
+        #gameCanvas {
+            border: 2px solid #fff;
+            background-color: #000;
+        }
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            text-align: center;
+            z-index: 10;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="700"></canvas>
+    <div id="overlay" class="hidden">
+        <h2 id="overlay-title">WAVE 1 START</h2>
+        <p id="overlay-content">Prepare for the next alien wave!</p>
+        <button id="next-button" class="hidden">Continue</button>
+    </div>
+    
+    <script src="questions.json"></script>
+    <script src="game.js"></script>
+</body>
+</html>
