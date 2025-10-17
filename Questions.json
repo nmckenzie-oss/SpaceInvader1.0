@@ -1,0 +1,23 @@
+[
+  {
+    "question": "True or False: Solar panels convert heat energy directly into electrical energy.",
+    "type": "T/F",
+    "answer": "False",
+    "options": ["True", "False"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "Which of these is a renewable energy source?",
+    "type": "MC",
+    "answer": "Wind",
+    "options": ["Coal", "Natural Gas", "Wind", "Nuclear"],
+    "difficulty": "medium"
+  },
+  {
+    "question": "What unit is commonly used to measure electrical energy consumption?",
+    "type": "MC",
+    "answer": "Kilowatt-hour",
+    "options": ["Joule", "Watt", "Kilowatt-hour", "Volt"],
+    "difficulty": "medium"
+  }
+]
