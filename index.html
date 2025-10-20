@@ -3,46 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders - Energy Quiz Edition</title>
+    <title>Invaders Quiz Shooter</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Basic CSS for the game screen */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #000;
-            font-family: monospace;
-        }
-        #gameCanvas {
-            border: 2px solid #fff;
-            background-color: #000;
-        }
-        #overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            text-align: center;
-            z-index: 10;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="700"></canvas>
-    <div id="overlay" class="hidden">
-        <h2 id="overlay-title">WAVE 1 START</h2>
-        <p id="overlay-content">Prepare for the next alien wave!</p>
-        <button id="next-button" class="hidden">Continue</button>
-    </div>
+    <div id="game-container">
+        
+        <canvas id="game-canvas" width="600" height="800"></canvas>
+        
+        <div id="quiz-container" class="hidden">
+            <div id="quiz-content">
+                <h2 id="quiz-title">Energy Quiz</h2>
+                <div id="quiz-timer">Time Left: 15s</div>
+                <p id="question-text">Question loading...</p>
+                <div id="options-container">
+                </div>
+                <div id="quiz-feedback" class="hidden"></div>
+            </div>
+        </div>
+
+        <div id="shop-container" class="hidden">
+            
+            <div id="shop-content">
+                <h2 id="shop-title">Energy Shop (30s)</h2>
+                <div id="shop-timer">Time Left: 30s</div>
+                <p>Spend your score on upgrades to prepare for the Boss Wave!</p>
+                <div id="upgrade-list">
+                    </div>
+                <button id="shop-close-button">Continue to Boss Wave</button>
+            </div>
+        </div>
+
+        <div id="stats-panel">
+            <span id="score-display">Score: 0</span>
+            <span id="wave-display">Wave: 1</span>
+            <span id="lives-display">Lives: 10</span>
+            <span id="ammo-display">Ammo: 0</span>
+        </div>
+
+        </div>
     
-    <script src="questions.json"></script>
     <script src="game.js"></script>
 </body>
 </html>

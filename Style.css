@@ -1,0 +1,305 @@
+:root {
+    --game-width: 600px;
+    --game-height: 800px;
+    --player-size: 50px;
+    --alien-size: 40px;
+    --bullet-width: 5px;
+    --bullet-height: 40px;
+    --landscape-height: 50px;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: linear-gradient(180deg, #0a0a2e 0%, #16213e 50%, #1a1a3a 100%); /* Dark space background */
+    font-family: 'Courier New', monospace;
+    color: white;
+}
+
+#game-container {
+    width: var(--game-width);
+    height: var(--game-height);
+    background-color: #00001a;
+    border: 3px solid #66fcf1; /* Cyan border for a futuristic look */
+    position: relative;
+    overflow: hidden; /* Keep game objects inside */
+    z-index: 10;
+}
+
+/* --- Stats Panel --- */
+#stats-panel {
+    position: absolute;
+    top: 50px;
+    left: 100px;
+    right: 100px;
+    display: flex; 
+    justify-content: space-between;
+    padding: 5px 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    color: white; /* Important for visibility */
+    z-index: 1000; /* <--- CRITICAL FIX: Ensures panel is visible over the game area */
+}
+
+/* --- Landscape (Planet) --- */
+#landscape {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: var(--landscape-height);
+    background: linear-gradient(to top, #385723, #1e3a10); /* Earthy green/brown gradient */
+    border-top: 5px solid #6b8e23; /* Planet surface line */
+}
+
+/* --- Player Ship --- */
+#player-ship {
+    width: var(--player-size);
+    height: var(--player-size);
+    background-color: #66fcf1; /* Player sprite (simple cyan square for now) */
+    position: absolute;
+    bottom: var(--landscape-height); /* Positioned just above the landscape */
+    left: calc(var(--game-width) / 2 - var(--player-size) / 2); /* Center horizontally */
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%); /* Simple triangle/spaceship shape */
+}
+
+/* --- Bullet Style --- */
+.bullet {
+    position: absolute;
+    width: var(--bullet-width);
+    height: var(--bullet-height);
+    background: linear-gradient(to top, #ff7300a0, #fbff00) /* Yellow laser */
+}
+
+/* --- Alien Style (Orange Classic) --- */
+.alien {
+    position: absolute;
+    width: var(--alien-size);
+    height: var(--alien-size);
+}
+/* --- Alien Style (Orange Classic - Existing) --- */
+.alien.orange-classic {
+    background-color: #ff8c00; /* Orange Classic */
+    border-radius: 5px;
+}
+
+/* --- New Alien Styles --- */
+.alien.blue-scout {
+    background-color: #0000ff; /* Blue Scout */
+    /* Fast-looking, animated wings, pulsing cyan eyes - will be implemented with real sprites/animations later */
+    clip-path: polygon(50% 0%, 75% 50%, 50% 100%, 25% 50%); /* Simple Diamond/Fast shape */
+}
+
+.alien.purple-octopus {
+    background-color: #800080; /* Purple Octopus */
+    /* Armored, helmet, visor, moving tentacle arms - will be implemented later */
+    border-radius: 50%; /* Rounded, Armored look */
+}
+
+.alien.green-robot {
+    background-color: #00ff00; /* Green Robot */
+    /* Mechanical, flickering eyes, moving head fan - will be implemented later */
+    border-radius: 0; /* Square, Mechanical shape */
+    border: 3px solid #6b8e23;
+}
+
+.alien.gold-warrior {
+    background-color: #ffd700; /* Gold Warrior */
+    /* Diamond shape, crown-like design */
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); /* Diamond shape */
+    border: 2px solid #fff;
+}
+
+/* --- Boss Alien Style --- */
+.alien.boss-alien {
+    /* Ensure the size is correct (though JS sets it, this acts as a good fallback/clarifier) */
+    width: calc(var(--alien-size) * 4); 
+    height: calc(var(--alien-size) * 4);
+    
+    /* Give it a distinct look */
+    background-color: #ff0000; /* Red for Boss */
+    border: 5px solid #ffd700; /* Gold border */
+    border-radius: 10px;
+    
+    /* A little pulsing effect to make it feel dangerous */
+    animation: pulse 1s infinite alternate; 
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px #ff0000; }
+    100% { transform: scale(1.05); box-shadow: 0 0 20px #ff0000; }
+}
+
+/* --- Explosion Visual (Step 6) --- */
+.explosion {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background-color: #ff4500;
+    border-radius: 50%;
+    animation: explode 0.2s forwards;
+    z-index: 50;
+}
+
+@keyframes explode {
+    0% { transform: scale(0); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* --- Utility --- */
+.hidden {
+    display: none !important;
+}
+
+/* --- Quiz Overlay Styles (New/Modified) --- */
+#quiz-container {
+    /* Critical: Overlay the entire game area */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Ensure the quiz is always on top of all game elements */
+    z-index: 2000;  
+    /* The semi-transparent background color to pause and dim the game */
+    background-color: rgba(0, 0, 30, 0.95); /* A slightly different dark blue tint */
+    /* Center the quiz content inside the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    text-align: center;
+    color: white;
+   
+}
+
+#quiz-content {
+    background-color: #00001a;
+    border: 3px solid #66fcf1; /* Cyan border for futuristic look */
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+    animation: pulse 3s infinite alternate; 
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px #0011ff; }
+    100% { transform: scale(1.01); box-shadow: 0 0 10px #ff0000; }
+}
+
+#question-text {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+#options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.quiz-option {
+    padding: 10px 20px;
+    background-color: #38006d;
+    color: white;
+    border: 1px solid #ff01c8;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.quiz-option:hover:not(:disabled) {
+    background-color: #05003f;
+}
+
+.quiz-correct {
+    background-color: #00ff00; /* Sea Green */
+}
+
+.quiz-incorrect {
+    background-color: #ff0000; /* Red */
+}
+
+#quiz-feedback {
+    margin-top: 15px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+/* --- PHASE 4: Shop Overlay Styles --- */
+#shop-container {
+    /* CRITICAL FIXES: Use 100% to guarantee full coverage of the parent (#game-container) */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Ensures the shop is always on top of all game elements (z-index 2000 is good) */
+    z-index: 2000;  
+    /* The semi-transparent background color to pause and dim the game */
+    background-color: rgba(30, 0, 30, 0.95); 
+    /* Center the shop content inside the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    text-align: center;
+    color: white;
+}
+
+#shop-content {
+    background-color: #00001a;
+    border: 3px solid #ffd700; /* Gold border */
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+}
+
+#shop-timer {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #ff8c00;
+}
+
+#upgrade-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.upgrade-button {
+    padding: 12px 20px;
+    background-color: #383838;
+    color: white;
+    border: 1px solid #66fcf1;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+}
+
+.upgrade-button:hover:not(:disabled) {
+    background-color: #555555;
+}
+
+.upgrade-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#shop-close-button {
+    padding: 10px 20px;
+    background-color: #2e8b57;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
