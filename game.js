@@ -30,6 +30,7 @@ const COLOR_MAP = {
     'D': '#e6fb04ff', // Yellow
     'W': '#ffffffff', // Brown
     'X': '#1dc200ff', // Green
+    'H': '#414141ff', // Dark Grey
     ' ': null       // Transparent/Background
     // Define colors for aliens here too
 }
@@ -251,25 +252,68 @@ const ALIEN_PATTERNS = {
         '    DLD    '
     ],
 
-    // 16x16 pattern (Boss)
+    // 18x18 pattern (Boss)
     'boss-alien': [
-        '  ##EEEEEE##  ',
-        ' #P P P P P# ',
-        '#P PPPPPPP P#',
-        'P P#L###L#P P',
-        'P PPPPPPPP P',
-        'P P G G G P P',
-        'P P G G G P P',
-        'P P G G G P P',
-        'P P PPPPP P P',
-        'P P PPPPP P P',
-        'P P P P P P P',
-        'P P P P P P P',
-        'P P P P P P P',
-        ' P P P P P P ',
-        ' P P P P P P ',
-        ' P P P P P P '
-    ]
+        ' H               ',
+        'H  HHHHHHHHHHHHHHH',
+        'H HEEEEHFFFFFHEEEEEH',
+        'HHELLEEEHHHHHEEELLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HEEEEEHHEEEHHEEEEEEH',
+        ' HEEEEEEHHHHHEEEEEEEH',
+        ' HHHHHHEEEEEEEHHHHHH ',
+        '       HHHHHHH       ',
+        '  E   HEEEEEEEH   E  ',
+        ' EEEHHHEEEEEEEHHHEEE ',
+        ' EEEHHHEEEEEEEHHHEEE ',
+        '      HEEEEEEEH      ',
+        '     HHHH HHHHH     ',
+        '    HEEEEH HEEHHH    ',
+        '    HHHHHH HHHHHH    '
+    ],
+    //Boss alien (18x18 pattern) Frame 1
+        'boss-alien-1': [
+        'H                ',
+        'H  HHHHHHHHHHHHHHH',
+        'H HEEEEHFFFFFHEEEEEH',
+        'HHELLEEEHHHHHEEELLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HEELLEEEEEEEEEELLEEH',
+        ' HEEEEEHHEEEHHEEEEEEH',
+        ' HEEEEEEHHHHHEEEEEEEH',
+        ' HHHHHHEEEEEEEHHHHHH ',
+        '       HHHHHHH       ',
+        '  E   HEHEEEHEH   E  ',
+        ' EEEHHHEHEEEHEHHHEEE ',
+        ' EEEHHHEHEEEHEHHHEEE ',
+        '      HEEEEEEEH      ',
+        '     HHHH HHHHH     ',
+        '    HEEEEH HEEEEH    ',
+        '    HHHHHH HHHHHH    ',
+],
+    //Boss alien (18x18 pattern) Frame 2
+        'boss-alien-2': [
+        ' H               ',
+        'H  HHHHHHHHHHHHHHH',
+        'H HEEEEHAAAAAHEEEEEH',
+        'HHELLEEEHHHHHEEELLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HELLLEEEEEEEEEELLLEH',
+        ' HEELLEEEEEEEEEELLEEH',
+        ' HEEEEEEEEEEEEEEEEEEH',
+        ' HEEEEEEHHHHHEEEEEEEH',
+        ' HHHHHHEEEEEEEHHHHHH ',
+        '       HHHHHHH       ',
+        '      HEHEEEHEH      ',
+        ' EEEHHHEHEEEHEHHHEEE ',
+        ' EEEHHHEHEEEHEHHHEEE ',
+        '      HEEEEEEEH      ',
+        '     HHHH HHHHH     ',
+        '    HEEEEH HEEEEH    ',
+        '    HHHHHH HHHHHH    ']
 };
 
 function drawExplosions() {
@@ -549,7 +593,7 @@ function drawAliens() {
     gameState.aliens.forEach(alien => {
         let pattern;
 
-        if (alien.type === 'orange-classic', 'purple-octopus', 'blue-scout', 'gold-warrior', 'green-robot') {
+        if (alien.type === 'orange-classic', 'purple-octopus', 'blue-scout', 'gold-warrior', 'green-robot', 'boss-alien') {
             // Select the animated pattern: 'orange-classic-1' or 'orange-classic-2'
             pattern = ALIEN_PATTERNS[`${alien.type}-${currentFrame}`]; 
 
