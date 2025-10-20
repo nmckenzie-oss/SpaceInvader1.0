@@ -151,7 +151,7 @@ const ALIEN_PATTERNS = {
     ],
     // Blue scout alien (10x10 pattern) Frame 1
     'blue-scout-1': [
-        'FF   BBBB    FF',
+        'FF   BBBB   FF',
         'FFF BBBBBB FFF',
         ' FF BBBBBB FF ',
         '   BBFFFFBB   ',
@@ -232,10 +232,10 @@ const ALIEN_PATTERNS = {
         'LLLLLLLLLLL',
         'LLDDLLLDDLL',
         'LDDLYDYLDDL',
-        ' DDLDYDLDD ',
+        ' DDLDLDLDD ',
         '  DLYDYLD  ',
         '   DLLLD   ',
-        '    DDD    '
+        '    DLD    '
     ],
     // 10x10 pattern Gold warrior frame 2
     'gold-warrior-2': [
@@ -245,10 +245,10 @@ const ALIEN_PATTERNS = {
         'LLLLLLLLLLL',
         'LLDDLLLDDLL',
         'LDDLDYDLDDL',
-        ' DDLYYYLDD ',
+        ' DDLYLYLDD ',
         '  DLDYDLD  ',
         '   DLLLD   ',
-        '    DDD    '
+        '    DLD    '
     ],
 
     // 16x16 pattern (Boss)
