@@ -8,14 +8,25 @@
     --landscape-height: 50px;
 }
 
+/* Add new selectors to fine-tune text size */
+#instructions-content p, 
+#instructions-content ul,
+#instructions-content li,
+#settings-controls label {
+    /* Adjust these sections slightly larger than the base font to make them stand out */
+    font-size: 1em; /* This translates to 1.1 * 10px = 11px */
+    line-height: 1; /* Improves vertical spacing */
+}
+
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: linear-gradient(180deg, #0a0a2e 0%, #16213e 50%, #1a1a3a 100%); /* Dark space background */
-    font-family: 'Courier New', monospace;
+    background-color: linear-gradient(180deg, #151563 0%, #16213e 50%, #2f2f68 100%); /* Dark space background */
+    font-family: 'Lexend', sans-serif;
+    font-size: 14px;
     color: white;
 }
 
@@ -23,10 +34,83 @@ body {
     width: var(--game-width);
     height: var(--game-height);
     background-color: #00001a;
-    border: 3px solid #66fcf1; /* Cyan border for a futuristic look */
+    border: 5px solid #66fcf1; /* Cyan border for a futuristic look */
     position: relative;
     overflow: hidden; /* Keep game objects inside */
     z-index: 10;
+    animation: pulse 10s infinite alternate; 
+}
+
+/* --- Instructions Screen --- */
+#instructions-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Dark semi-transparent background to cover the game */
+    background-color: rgba(0, 0, 0, 0.95); 
+    z-index: 3000; /* Ensure it's above everything else */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    font-size: 1.5em;
+}
+
+#instructions-content {
+    background-color: #1a1a3a; /* Dark purple/blue background */
+    border: 3px solid #66fcf1; /* Cyan border */
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 0 20px rgba(102, 252, 241, 0.5);
+}
+
+#instructions-content h2 {
+    color: #00ff11; /* Gold */
+    margin-bottom: 10px;
+    font-size: 30px;
+    font-family: 'press start 2p', cursive;
+}
+
+#instructions-content h3 {
+    color: #eaff00; /* Orange */
+    margin-top: 20px;
+    margin-bottom: 5px;
+    font-size: 25px;
+    font-weight: bold;
+    font-family: 'press start 2p', cursive;
+}
+
+#instructions-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 30px 0;
+}
+
+#instructions-content li {
+    margin: 8px 0;
+}
+
+#begin-game-button {
+    padding: 15px 30px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #000000;
+    background-color: #66fcf1; /* Cyan */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-family: 'press start 2p', cursive;
+}
+
+#begin-game-button:hover {
+    background-color: #ff00d9;
 }
 
 /* --- Stats Panel --- */
@@ -40,19 +124,14 @@ body {
     padding: 5px 10px;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 5px;
+    border: 3px solid #ff00f2;
+    animation: pulse 5s infinite alternate;
     color: white; /* Important for visibility */
-    z-index: 1000; /* <--- CRITICAL FIX: Ensures panel is visible over the game area */
+    z-index: 2500; /* <--- CRITICAL FIX: Ensures panel is visible over the game area */
+    font-size: 20px;
 }
 
-/* --- Landscape (Planet) --- */
-#landscape {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: var(--landscape-height);
-    background: linear-gradient(to top, #385723, #1e3a10); /* Earthy green/brown gradient */
-    border-top: 5px solid #6b8e23; /* Planet surface line */
-}
+
 
 /* --- Player Ship --- */
 #player-ship {
@@ -211,6 +290,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-size: 16px;
 }
 
 .quiz-option:hover:not(:disabled) {
@@ -247,7 +327,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    
     text-align: center;
     color: white;
 }
@@ -255,23 +334,64 @@ body {
 #shop-content {
     background-color: #00001a;
     border: 3px solid #ffd700; /* Gold border */
-    padding: 30px;
+    /* 1. CONDENSE SCREEN: Reduced padding to save vertical space */
+    padding: 20px; 
     border-radius: 10px;
-    width: 80%;
-    max-width: 500px;
+    width: 90%; /* Increased width slightly for a bit more horizontal space */
+    max-width: 550px;
+    
+    /* 2. CONDENSE SCREEN: Critical: Allows content to scroll if it's still too tall */
+    max-height: 700px; /* Set a max height below 800 to ensure it fits */
+    overflow-y: auto;
+}
+
+#shop-title {
+    margin-top: 5px; /* Reduce top margin */
+    margin-bottom: 10px;
 }
 
 #shop-timer {
     font-size: 1.2em;
-    margin-bottom: 20px;
+    /* Reduced margin-bottom from 20px to 10px */
+    margin-bottom: 10px;
     color: #ff8c00;
+}
+
+#shop-content p:first-of-type {
+    margin-top: 0;
+    margin-bottom: 10px;
 }
 
 #upgrade-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.upgrade-item {
+    border: 1px solid #004272; /* Subtle border for separation */
+    padding: 8px; /* Reduced internal padding for each item */
+    border-radius: 5px;
+    background-color: #00002b;
+}
+
+.upgrade-item h4, 
+.upgrade-item p {
+    margin: 0; /* Eliminates the large default top/bottom margins */
+}
+
+.upgrade-item .description {
+    font-size: 0.9em;
+    color: #ccc;
+    margin-bottom: 5px; /* Add a small margin back for separation from the info line */
+}
+
+.info-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
 }
 
 .upgrade-button {
@@ -302,4 +422,25 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+}
+
+/* --- Settings Controls --- */
+#settings-controls {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px dashed #f400dc; /* Pink dashed border for visual separation */
+    border-radius: 5px;
+}
+
+#settings-controls label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ff8c00; /* Orange color for the label */
+}
+
+#volume-slider {
+    width: 80%;
+    margin-top: 10px;
+    /* You can add custom styles for the slider thumb and track here 
+       to match the retro/sci-fi theme, but the default will work fine. */
 }

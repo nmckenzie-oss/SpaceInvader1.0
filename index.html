@@ -4,13 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invaders Quiz Shooter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <audio id="game-music" src="Pixel Stars (2).mp3" loop autoplay muted></audio>
     <div id="game-container">
         
         <canvas id="game-canvas" width="600" height="800"></canvas>
         
+        <div id="instructions-container">
+            <div id="instructions-content">
+             <h2>Space Invaders</h2>
+             <p>Defend Earth from the Aliens!</p>
+        
+             <h3>HOW TO PLAY:</h3>
+            <ul>
+            <li><strong>MOVE:</strong> Use the Left and Right Arrow Keys (or 'A' and 'D').</li>
+            </ul>
+
+            <h3>GAME FLOW:</h3>
+            <p>Waves of aliens will attack. Every wave, a Quiz Screen will appear. Answer the questions correctly to earn Ammo to defeat the aliens!</p>
+            <h3>SETTINGS</h3>
+
+             <div id="settings-controls">
+                <label for="volume-slider">Music Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="50">
+            </div>
+             <button id="begin-game-button">BEGIN GAME</button>
+            </div>
+        </div>
+
         <div id="quiz-container" class="hidden">
             <div id="quiz-content">
                 <h2 id="quiz-title">Energy Quiz</h2>
