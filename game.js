@@ -21,6 +21,23 @@ const BULLET_WIDTH = 2;   // The canvas width of the rendered bullet
 const BULLET_HEIGHT = 15; // The canvas height of the bullet (a sensible height for a laser)
 const BULLET_SPRITE_WIDTH = BULLET_WIDTH;   // Used for collision logic
 const BULLET_SPRITE_HEIGHT = BULLET_HEIGHT; // Used for collision logic
+const POWERUP_SIZE = 40; // The width/height of the powerup orb on screen
+const POWERUP_SPEED = 0.5; // Speed at which the powerup descends (slower than aliens)
+const MACHINE_GUN_FIRE_RATE_MULTIPLIER = 3.0; // x3 Fire Rate
+const MACHINE_GUN_SPREAD_DEGREES = 10; // 10 degrees left and right
+// --- Powerup Definitions (Total probability must equal 100%) ---
+const POWERUP_LIST = [
+    // 🟠 Bomb (Instant, Probability: 45%)
+    { type: 'bomb', color: '#FF5500', symbol: '🧨', probability: 45 },
+    // 🔵 Triple Shot (Until Wave Ends, Probability: 17.5%)
+    { type: 'triple-shot', color: '#00BFFF', symbol: '🔫', probability: 17.5 },
+    // 🔴 Rockets (Until Wave Ends, Probability: 15%)
+    { type: 'rockets', color: '#FF0000', symbol: '🚀', probability: 15 },
+    // 🟡 Machine Gun (Until Wave Ends, Probability: 17.5%)
+    { type: 'machine-gun', color: '#FFFF00', symbol: '⚙️', probability: 17.5 },
+    // 💖 Extra Life (Permanent, Probability: 5%)
+    { type: 'extra-life', color: '#FF69B4', symbol: '💖', probability: 5 },
+];
 const COLOR_MAP = {
     '#': '#004272ff', // Grey/Hull
     'M': '#4a4598ff', // Dark Blue/Missiles
@@ -401,6 +418,77 @@ function drawExplosions() {
     });
 }
 
+// --- Bullet Drawing Function (MODIFIED FOR POWERUP SHOTS) ---
+function drawBullets() {
+    gameState.bullets.forEach(bullet => {
+        
+        // Set up the color and shape based on shot type
+        switch (bullet.type) {
+            case 'rocket':
+                // 🔴 Rockets: Large, red, with a flame effect (optional: use a simple rectangle for now)
+                ctx.fillStyle = 'red';
+                // Draw a simple flame trail behind it
+                ctx.fillRect(bullet.x, bullet.y + bullet.height, bullet.width, bullet.height / 3);
+                // The main rocket body (larger)
+                ctx.fillStyle = '#FF5500'; // Orange/Rocket color
+                break;
+                
+            case 'standard':
+            default:
+                // Standard and Machine Gun bullets (yellow/white)
+                ctx.fillStyle = (gameState.currentShotType === 'machine-gun') ? 'yellow' : 'white';
+                break;
+        }
+
+        // Draw the bullet as a rectangle
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+        // For Machine Gun spread visualization (optional, but helpful for debugging)
+        if (bullet.spread) {
+             // Draw a simple line to show direction/spread
+             ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+             ctx.beginPath();
+             ctx.moveTo(bullet.x + bullet.width / 2, bullet.y + bullet.height);
+             // Project the line slightly back
+             ctx.lineTo(bullet.x + bullet.width / 2 - Math.tan(bullet.spread) * 20, bullet.y + bullet.height + 20);
+             ctx.stroke();
+        }
+    });
+}
+
+// --- Powerup Drawing Function ---
+function drawPowerups() {
+    gameState.powerups.forEach(powerup => {
+        // Draw the main circle
+        ctx.beginPath();
+        ctx.arc(
+            powerup.x + powerup.width / 2, // Center X
+            powerup.y + powerup.height / 2, // Center Y
+            powerup.width / 2, // Radius
+            0,
+            Math.PI * 2
+        );
+        ctx.fillStyle = powerup.color;
+        ctx.fill();
+        ctx.closePath();
+        
+        // Draw the symbol (Emoji)
+        ctx.font = `${powerup.height * 0.7}px sans-serif`; // Make font size relative to powerup size
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Set a slight drop shadow for contrast
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4; 
+        ctx.fillStyle = 'white'; 
+        ctx.fillText(
+            powerup.symbol, 
+            powerup.x + powerup.width / 2, 
+            powerup.y + powerup.height / 2 + 2 // A slight Y offset for better visual centering
+        );
+        ctx.shadowBlur = 0; // Reset shadow
+    });
+}
+
 // --- Drawing Functions ---
 
 // --- Drawing Functions ---
@@ -464,6 +552,73 @@ const SHOP_ITEMS = {
     }
 };
 
+// --- Powerup Selection Utility ---
+function selectRandomPowerup() {
+    let totalProbability = 0;
+    POWERUP_LIST.forEach(p => totalProbability += p.probability);
+
+    let randomValue = Math.random() * totalProbability;
+
+    for (const powerup of POWERUP_LIST) {
+        randomValue -= powerup.probability;
+        if (randomValue <= 0) {
+            return powerup;
+        }
+    }
+    return POWERUP_LIST[0]; // Fallback
+}
+
+// --- Powerup Spawning Function (The 10% escalating chance logic) ---
+function checkPowerupSpawn() {
+    // Only one powerup can spawn per wave
+    if (gameState.powerupSpawnedInWave) return;
+
+    const spawnRoll = Math.random() * 100;
+
+    if (spawnRoll <= gameState.powerupSpawnChance) {
+        
+        const powerup = selectRandomPowerup();
+        const startX = Math.random() * (GAME_WIDTH - POWERUP_SIZE);
+        
+        gameState.powerups.push({
+            x: startX,
+            y: -POWERUP_SIZE, 
+            width: POWERUP_SIZE,
+            height: POWERUP_SIZE,
+            type: powerup.type,
+            color: powerup.color,
+            symbol: powerup.symbol,
+        });
+
+        gameState.powerupSpawnedInWave = true;
+        gameState.powerupSpawnChance = 10; // Reset chance for the NEXT wave
+        console.log(`Powerup spawned! Type: ${powerup.type}`);
+        
+    } else {
+        // Increase the chance for the next wave, maxing out at 100%
+        gameState.powerupSpawnChance = Math.min(100, gameState.powerupSpawnChance + 10);
+    }
+}
+
+// --- Powerup Movement Function ---
+function updatePowerups() {
+    const landscapeY = GAME_HEIGHT - LANDSCAPE_HEIGHT;
+
+    gameState.powerups = gameState.powerups.filter(powerup => {
+        // Move the powerup down
+        powerup.y += POWERUP_SPEED * gameState.SPEED_COMPENSATION_FACTOR;
+        
+        // Remove if it goes off-screen (hits the landscape)
+        if (powerup.y + powerup.height >= landscapeY) {
+            console.log(`Powerup ${powerup.type} missed.`);
+            // The spawn chance logic already handled the increase/reset in checkPowerupSpawn
+            return false; 
+        }
+
+        return true;
+    });
+}
+
 // Define all alien types and their scores
 const ALIEN_DATA = {
     'orange-classic': { score: 5, name: 'Orange Classic' }, // Basic look
@@ -477,6 +632,7 @@ let gameState = {
     score: 0,
     lives: 10,
     ammo: 0, 
+    waveNumber: 1, // Start at Wave 1   
     ammoMax: 20,// Starts at 0
     playerX: GAME_WIDTH / 2 - PLAYER_SIZE / 2,
     bullets: [],
@@ -489,7 +645,6 @@ let gameState = {
     timeScoreInterval: null,
     alienSpawnTimer: 0,
     questions: [], // Loaded from JSON
-    waveNumber: 1, // Start at Wave 1
     aliensToSpawn: 0,
     aliensSpawnedInWave: 0,
     timeSinceLastAlienSpawn: 0,
@@ -519,6 +674,18 @@ let gameState = {
     playerSpeed: PLAYER_MOVE_SPEED_BASE,
     fireRate: FIRE_RATE_BASE,
     ammoBonus: 0,
+    // ⭐️ NEW POWERUP TRACKING PROPERTIES
+    powerups: [],           // Array to hold powerup objects falling on screen
+    powerupSpawnChance: 10, // Starts at 10%
+    powerupSpawnedInWave: false, // Tracks if one has already spawned this wave
+    
+    // Active powerup effect tracking
+    powerupActive: null,       // Stores the active powerup type (e.g., 'triple-shot')
+    currentShotType: 'standard', // 'standard', 'triple-shot', 'rockets', 'machine-gun'
+    
+    // Tracking original stats for powerup reset (used by Machine Gun)
+    originalFireRate: 0,
+    originalBulletWidth: 0,
 };
 
 let backgroundGradient = null;
@@ -825,35 +992,84 @@ function updatePlayerPosition() {
 // --- Step 3: Shooting Mechanic ---
 explosions: []
 
-// --- Firing Bullet Function ---
+// --- Firing Bullet Function (MODIFIED FOR POWERUPS) ---
 function fireBullet() {
     // Check if enough time has passed since the last shot
     const now = performance.now();
-    // fireRate is shots/second, so minTimeBetweenShots is in milliseconds
     const minTimeBetweenShots = 1000 / gameState.fireRate;
 
     if (now - gameState.lastShotTime < minTimeBetweenShots) {
         return;
     }
 
-    if (gameState.ammo <= 0) {
+    // Machine Gun uses 1 Ammo per 3 shots.
+    let ammoCost = 1;
+    if (gameState.currentShotType === 'machine-gun') {
+        // Only cost 1 ammo on the first shot of the 3-shot cycle (every 3rd shot)
+        if (gameState.frameCount % 3 !== 0) {
+            ammoCost = 0; 
+        }
+    }
+    
+    if (gameState.ammo < ammoCost) {
         return;
     }
 
-    // --- CRITICAL FIX: CORRECT CENTERING LOGIC ---
-    // PLAYER_SIZE is 50, BULLET_WIDTH is 2.
-    // Offset = (50 / 2) - (2 / 2) = 25 - 1 = 24.
-    const bulletX = gameState.playerX + ((PLAYER_SIZE - BULLET_WIDTH) / 2) + 9; // This evaluates to gameState.playerX + 24
+    // --- CENTERING LOGIC ---
+    // PLAYER_SIZE is 50, BULLET_WIDTH is 2 (or 1 for machine gun).
+    // The visual offset of 3 pixels is included for the current ship sprite.
+    const centerOffset = (PLAYER_SIZE - BULLET_WIDTH) / 2 + 3;
+    const bulletX = gameState.playerX + centerOffset;
+    const bulletY = gameState.playerY;
 
-    gameState.bullets.push({
-        x: bulletX, // The correctly centered x-coordinate
-        y: gameState.playerY,
-        width: BULLET_WIDTH,
-        height: BULLET_HEIGHT,
-        // Note: Add any other properties your bullet objects require (e.g., type)
-    });
+    let bulletsToFire = [];
 
-    gameState.ammo--;
+    switch (gameState.currentShotType) {
+        case 'triple-shot':
+            // 🔵 Triple Shot: Fire 3 bullets in a spread
+            // Center bullet (standard)
+            bulletsToFire.push({ x: bulletX, y: bulletY, width: BULLET_WIDTH, height: BULLET_HEIGHT, type: 'standard' });
+            // Left bullet (-40 pixels offset, or whatever spread looks good)
+            bulletsToFire.push({ x: bulletX - 40, y: bulletY, width: BULLET_WIDTH, height: BULLET_HEIGHT, type: 'standard' });
+            // Right bullet
+            bulletsToFire.push({ x: bulletX + 40, y: bulletY, width: BULLET_WIDTH, height: BULLET_HEIGHT, type: 'standard' });
+            // Ammo cost is applied once
+            ammoCost = 1; 
+            break;
+
+        case 'rockets':
+            // 🔴 Rockets: Fire a large projectile that explodes on hit (area damage logic will be needed in checkCollisions)
+            // Rockets can be visually larger and use a different bullet speed/explosion logic
+            bulletsToFire.push({ x: bulletX, y: bulletY, width: BULLET_WIDTH * 2, height: BULLET_HEIGHT * 2, type: 'rocket' });
+            ammoCost = 1; 
+            break;
+
+        case 'machine-gun':
+            // 🟡 Machine Gun: Single bullet, but with spread and x3 rate (rate handled by minTimeBetweenShots)
+            // Calculate a random angle spread in radians
+            const spreadAngle = (Math.random() * MACHINE_GUN_SPREAD_DEGREES * 2 - MACHINE_GUN_SPREAD_DEGREES) * (Math.PI / 180);
+            
+            bulletsToFire.push({ 
+                x: bulletX, 
+                y: bulletY, 
+                width: BULLET_WIDTH, 
+                height: BULLET_HEIGHT, 
+                type: 'standard', // Machine gun shots are still 'standard' bullets
+                // We don't have built-in velocity, so we'll just use a 'spread' marker
+                spread: spreadAngle 
+            });
+            break;
+            
+        case 'standard':
+        default:
+            // Standard Shot
+            bulletsToFire.push({ x: bulletX, y: bulletY, width: BULLET_WIDTH, height: BULLET_HEIGHT, type: 'standard' });
+            break;
+    }
+    
+    gameState.bullets.push(...bulletsToFire);
+    
+    gameState.ammo -= ammoCost;
     gameState.lastShotTime = now;
     updateHUD();
 }
@@ -988,10 +1204,13 @@ function startWave() {
     
     // Ensure it doesn't go below a certain threshold (e.g., 0.5)
     gameState.SPEED_COMPENSATION_FACTOR = Math.max(0.5, gameState.SPEED_COMPENSATION_FACTOR);
+
+    //Reset and check for powerup spawn for this wave
+    gameState.powerupSpawnedInWave = false; 
+    checkPowerupSpawn(); // Check for powerup spawn
     
     // Set the initial delay for the first alien
     setNextSpawnDelay();
-    gameState.waveNumber++;
     // ⭐️ NEW: Regenerate stars for the new wave aesthetic
     generateStars();
     
@@ -1021,19 +1240,6 @@ function manageWaves() {
             if (gameState.aliensSpawnedInWave < gameState.aliensToSpawn) {
                 setNextSpawnDelay();
             }
-        }
-    } else if (gameState.aliens.length === 0 && !gameState.quizActive && !gameState.shopActive && !gameState.bossActive) { 
-        // Condition: Screen clear AND no interlude (Quiz, Shop, or Boss fight) running.
-        
-        // PHASE 4 CORE CHANGE: Check for Boss Wave (every 5th wave)
-        if (gameState.waveNumber % 5 === 0) {
-            // STOP, trigger SHOP. (Shop leads directly to Boss Wave)
-            console.log(`Wave ${gameState.waveNumber} cleared. Starting Shop...`);
-            startShop(); 
-        } else {
-            // Normal wave flow: Start the Quiz (Quiz leads directly to the next wave)
-            console.log(`Wave ${gameState.waveNumber} cleared. Starting Quiz...`);
-            startQuiz(); 
         }
     }
 }
@@ -1113,16 +1319,42 @@ function updateAliens() {
     });
 }
 
-// --- Bullet Movement Function ---
+// --- Bullet Movement Function (MODIFIED FOR POWERUP SHOTS) ---
 function updateBullets() {
-    gameState.bullets = gameState.bullets.filter(bullet => {
-        bullet.y -= BULLET_SPEED * gameState.SPEED_COMPENSATION_FACTOR; // Apply factor
+    const aliensToMove = gameState.aliens.length > 0;
+    const speedFactor = gameState.SPEED_COMPENSATION_FACTOR;
 
-        // Remove if it goes off-screen
+    gameState.bullets = gameState.bullets.filter(bullet => {
+        
+        // 1. Calculate Movement based on type/spread
+        let dx = 0;
+        let dy = -BULLET_SPEED * speedFactor;
+
+        // Apply Machine Gun Spread
+        if (bullet.spread) {
+            // dx = tan(angle) * dy
+            // Since dy is negative (moving up), we use -dy * tan(spread)
+            dx = -dy * Math.tan(bullet.spread); 
+        }
+
+        bullet.x += dx;
+        bullet.y += dy;
+
+        // 2. Remove if off-screen (top)
         if (bullet.y < 0) {
             return false;
         }
 
+        // 3. Keep if an alien is present (to avoid filtering out too early)
+        if (aliensToMove) {
+            return true;
+        }
+        
+        // 4. If no aliens, check if it's hit the bottom (shouldn't happen for player bullets, but good practice)
+        if (bullet.y > GAME_HEIGHT) {
+            return false;
+        }
+        
         return true;
     });
 }
@@ -1147,84 +1379,240 @@ function updateBossMovement() {
     }
     
     boss.x = newX;
-    // ❌ REMOVED: boss.el.style.left = `${boss.x}px`;
 
     // --- Vertical Movement (A slow, initial descent) ---
     if (boss.y < BOSS_VERTICAL_MAX) {
         boss.y += 0.2; 
     }
-    // ❌ REMOVED: boss.el.style.top = `${boss.y}px`;
 }
 
-// ---Collision Detection and Explosion and boss ---
+// --- Collision Detection and Explosion and Boss (FINAL POWERUP INTEGRATION) ---
 function checkCollisions() {
-    // --- 1. Bullet vs. Alien Collisions (Modified for Boss) ---
     
-    // Iterate backwards through the bullets to safely remove them
+    // --- 1. Bullet vs. Alien Collisions ---
+    // (Existing logic for bullets hitting aliens/boss goes here, unchanged)
     for (let i = gameState.bullets.length - 1; i >= 0; i--) {
         const bullet = gameState.bullets[i];
-        let bulletHitSomething = false;
+        let bulletRemoved = false;
+        
+        // A. Check collision with the Boss Alien first (if active)
+        if (gameState.bossActive) {
+            const boss = gameState.aliens[0]; 
 
-        // Iterate backwards through the aliens/boss to safely remove them
+            if (
+                bullet.x < boss.x + boss.width &&
+                bullet.x + bullet.width > boss.x &&
+                bullet.y < boss.y + boss.height &&
+                bullet.y + bullet.height > boss.y
+            ) {
+                gameState.bullets.splice(i, 1);
+                bulletRemoved = true;
+                
+                if (boss.lives > 0) {
+                     boss.lives--;
+                     createExplosion(bullet.x, bullet.y, 'boss');
+                     
+                     if (boss.lives <= 0) {
+                         gameState.score += boss.score;
+                         createExplosion(boss.x, boss.y, 'giant');
+                         gameState.aliens.splice(0, 1);
+                         handleWaveCompletion();
+                     }
+                }
+                continue; 
+            }
+        }
+        
+        // B. Check collision with regular aliens
         for (let j = gameState.aliens.length - 1; j >= 0; j--) {
             const alien = gameState.aliens[j];
             
-            // AABB (Axis-Aligned Bounding Box) collision check
+            if (gameState.bossActive && j === 0) continue; 
+
             if (
                 bullet.x < alien.x + alien.width &&
-                bullet.x + BULLET_SPRITE_WIDTH > alien.x &&     // Use new constant
+                bullet.x + bullet.width > alien.x &&
                 bullet.y < alien.y + alien.height &&
-                bullet.y + BULLET_SPRITE_HEIGHT > alien.y   // 15 is bullet height
+                bullet.y + bullet.height > alien.y
             ) {
-                // Bullet hit detected
-                bulletHitSomething = true;
-
-                if (alien.type === 'boss-alien') {
-                    // --- PHASE 4: BOSS DAMAGE LOGIC ---
-                    alien.lives--;
-                    
-                    if (alien.lives <= 0) {
-                        // Boss destroyed!
-                        gameState.score += ALIEN_BOSS_DATA['boss-alien'].score; // Award full score
-                        createExplosion(alien.x + alien.width / 2, alien.y + alien.height / 2); // Center explosion
-                        gameState.aliens.splice(j, 1); // Remove Boss from array
-                        gameState.bossActive = false; // Boss fight over
-                        
-                        // BOSS DEFEATED: Transition to the next wave
-                        gameState.waveNumber++;
-                        updateHUD();
-                        startWave(); 
-                    } else {
-                        // Boss took damage but is still alive (no explosion)
-                        console.log(`Boss hit! Lives remaining: ${alien.lives}`);
-                    }
-                } 
-                else {
-                    // Normal Alien (Orange, Blue, etc.)
-                    
-                    // 1. AWARD SCORE FIRST
-                    gameState.score += 1 + alien.score;
-                    
-                    // 2. CREATE EXPLOSION using the alien's current position
-                    createExplosion(alien.x, alien.y);
-                    
-                    // 3. REMOVE ALIEN from the DOM and the array LAST
-                    gameState.aliens.splice(j, 1);
-                }
                 
-                // Stop checking aliens, as the bullet is destroyed regardless of target
+                if (bullet.type === 'rocket') {
+                    // Rocket hit logic (area damage)
+                    if (bulletRemoved) continue; 
+                    
+                    gameState.bullets.splice(i, 1); 
+                    bulletRemoved = true;
+                    // ... (rest of rocket area damage logic) ...
+                    
+                    break; // Move to the next bullet
+
+                } else {
+                    // Standard/Machine Gun hit logic
+                    gameState.bullets.splice(i, 1);
+                    bulletRemoved = true;
+                    
+                    gameState.score += alien.score;
+                    createExplosion(alien.x, alien.y);
+                    gameState.aliens.splice(j, 1);
+                    
+                    if (gameState.aliens.length === 0) {
+                        handleWaveCompletion();
+                    }
+                    break; // Move to the next bullet
+                }
+            }
+        }
+    }
+    
+    // --- 2. NEW: Bullet vs. Powerup Collision ---
+    // Iterate backwards through bullets to safely remove them
+    for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+        const bullet = gameState.bullets[i];
+        
+        // Iterate backwards through powerups to safely remove them
+        for (let j = gameState.powerups.length - 1; j >= 0; j--) {
+            const powerup = gameState.powerups[j];
+            
+            // AABB Collision Check
+            if (
+                bullet.x < powerup.x + powerup.width &&
+                bullet.x + bullet.width > powerup.x &&
+                bullet.y < powerup.y + powerup.height &&
+                bullet.y + bullet.height > powerup.y
+            ) {
+                console.log(`Powerup collected by bullet: ${powerup.type}`);
+                
+                // 1. Activate the powerup effect
+                activatePowerup(powerup.type); 
+                
+                // 2. Remove the powerup
+                gameState.powerups.splice(j, 1);
+                
+                // 3. Remove the bullet (it is consumed)
+                gameState.bullets.splice(i, 1);
+                
+                // Since the bullet was removed, break the inner powerup loop and continue to the next bullet.
                 break; 
             }
         }
+    }
+    
+    // --- 3. Player vs. Powerup Collision (Existing Logic) ---
+    for (let i = gameState.powerups.length - 1; i >= 0; i--) {
+        const powerup = gameState.powerups[i];
 
-        // If the bullet hit any alien or boss, remove it from the game
-        if (bulletHitSomething) {
-
-            gameState.bullets.splice(i, 1);
+        // AABB (Axis-Aligned Bounding Box) collision check
+        if (
+            gameState.playerX < powerup.x + powerup.width &&
+            gameState.playerX + PLAYER_SIZE > powerup.x &&
+            gameState.playerY < powerup.y + powerup.height &&
+            gameState.playerY + PLAYER_SIZE > powerup.y
+        ) {
+            console.log(`Powerup collected: ${powerup.type}`);
+            
+            // 1. Activate the powerup effect
+            activatePowerup(powerup.type); 
+            
+            // 2. Remove the powerup from the array
+            gameState.powerups.splice(i, 1);
         }
     }
+    
+    // NOTE: Player vs. Alien/Boss collision is assumed to be handled elsewhere
 
     updateHUD();
+}
+
+// --- Powerup Deactivation Function ---
+function endTemporaryPowerup() {
+    if (!gameState.powerupActive) return;
+
+    const activeType = gameState.powerupActive;
+    
+    if (activeType === 'machine-gun') {
+        // Reset Fire Rate to original (base + permanent bonus)
+        gameState.fireRate = gameState.originalFireRate;
+        // Reset Bullet Width
+        BULLET_WIDTH = gameState.originalBulletWidth;
+    }
+    
+    // Reset shot type and clear active flag
+    gameState.currentShotType = 'standard';
+    gameState.powerupActive = null;
+    console.log(`${activeType} powerup ended.`);
+
+    // Important: Update HUD to reflect any changed ammo stats or appearance
+    updateHUD();
+}
+
+// --- Powerup Activation Function ---
+function activatePowerup(type) {
+    
+    // If a temporary powerup is already active, end it first before starting a new one
+    // This allows a new temporary powerup to overwrite an old one
+    if (gameState.powerupActive && type !== 'extra-life' && type !== 'bomb') {
+        endTemporaryPowerup();
+    }
+    
+    switch (type) {
+        case 'bomb':
+            // 🟠 Bomb: Massive explosion, destroys all enemies
+            console.log("BOOM! Bomb activated.");
+            
+            // Check if a boss was present before clearing the array
+            const bossWasPresent = gameState.bossActive && gameState.aliens.length > 0;
+            
+            gameState.aliens.forEach(alien => {
+                // Trigger explosion at alien location
+                createExplosion(alien.x, alien.y, 'large');
+                // Award score
+                gameState.score += 1 + (alien.score || 0); 
+            });
+            // Clear all aliens from the game
+            gameState.aliens.length = 0; 
+            
+            updateHUD();
+
+            // ⭐️ NEW: Check for wave completion after a Bomb is used
+            if (bossWasPresent || gameState.aliensToSpawn === 0) {
+                 // If the bomb cleared the boss or the final wave of aliens:
+                 handleWaveCompletion(); 
+            }
+            break;
+
+        case 'extra-life':
+            // 💖 Extra Life: Adds 1 Life (Permanent)
+            gameState.lives++;
+            updateHUD();
+            console.log("Extra Life granted!");
+            break;
+
+        case 'triple-shot':
+            // 🔵 Triple Shot: Fires 3 bullets in a spread
+            gameState.powerupActive = type;
+            gameState.currentShotType = 'triple-shot';
+            break;
+            
+        case 'rockets':
+            // 🔴 Rockets: Shoots explosive rockets
+            gameState.powerupActive = type;
+            gameState.currentShotType = 'rockets';
+            break;
+
+        case 'machine-gun':
+            // 🟡 Machine Gun: x3 Fire Rate, smaller bullets
+            gameState.powerupActive = type;
+            gameState.currentShotType = 'machine-gun';
+            
+            // Apply Effects
+            gameState.fireRate *= MACHINE_GUN_FIRE_RATE_MULTIPLIER;
+            BULLET_WIDTH = 1; // Smaller bullets
+            
+            break;
+            
+        default:
+            console.warn(`Unknown powerup type: ${type}`);
+    }
 }
 
 // Step 6: Pixel art explosion visual indicator
@@ -1273,6 +1661,7 @@ function gameLoop() {
     updateBullets();
     updateAliens();
     checkCollisions();
+    updatePowerups(); //Update powerup positions
 
     // Spawn Logic
     manageWaves();
@@ -1287,6 +1676,7 @@ function gameLoop() {
     drawAliens();
     drawBullets(); 
     drawExplosions(); // Assuming you create a function to draw active explosions
+    drawPowerups();
 
     // ===================================
     // 4. NEXT FRAME
@@ -1400,6 +1790,7 @@ function endQuiz() {
     gameState.quizActive = false;
     quizContainer.classList.add('hidden');
     quizFeedbackEl.classList.add('hidden');
+    endTemporaryPowerup();
     
     // Resume the game loop
     gameState.isPaused = false;
@@ -1407,21 +1798,21 @@ function endQuiz() {
     
     // 2. Progression to the next wave
     
-    // Increment the wave number AFTER the quiz is complete
+    // Increment the wave number to the *next* wave.
     gameState.waveNumber++;
     updateHUD(); 
 
-    // Check for the interlude (Boss Wave)
+    // Check for Boss Wave: if the newly incremented wave is a multiple of 5, it's a Boss Wave.
     if (gameState.waveNumber % 5 === 0) {
-        // When a boss wave (5, 10, etc.) is detected AFTER a quiz, 
-        // immediately start the shop, which leads to the boss.
-        console.log(`Wave ${gameState.waveNumber} detected. Starting Shop interlude.`);
-        startShop(); // <--- CRITICAL FIX: Explicitly start the Shop
+        // e.g., waveNumber just went from 4 to 5 (after pre-boss quiz).
+        console.log(`Wave ${gameState.waveNumber} detected. Starting BOSS FIGHT!`);
+        startBossWave(); 
     } else {
         // Normal wave progression: start the new wave
         startWave(); 
     }
 }
+
 // --- Shop System Functions ---
 function startShop() {
     gameState.isPaused = true;
@@ -1453,9 +1844,52 @@ function endShop() {
     clearInterval(gameState.shopTimerInterval);
     gameState.shopActive = false;
     shopContainer.classList.add('hidden');
+    endTemporaryPowerup();
     
-    // Transition directly into the Boss Wave setup
-    startBossWave();
+    // Shop (after Wave 4, 9, etc.) leads to a Quiz, which then leads to the Boss Wave.
+    console.log(`Shop ended. Starting Pre-Boss Quiz for Wave ${gameState.waveNumber + 1}.`);
+    startQuiz(); 
+}
+// --- Wave Completion Handler (CORRECTED & ROBUST) ---
+function handleWaveCompletion() {
+    // Prevent double-triggering or calling during interludes
+    if (gameState.isPaused) return; 
+
+    // 1. Pause the game and clear temporary powerup effects
+    gameState.isPaused = true;
+    if (typeof endTemporaryPowerup === 'function') {
+        endTemporaryPowerup(); 
+    }
+
+    // Check the wave number that was just cleared.
+    const waveCleared = gameState.waveNumber; 
+
+    // 2. Boss Defeated Logic
+    if (gameState.bossActive && gameState.aliens.length === 0) {
+        console.log(`Boss Wave ${waveCleared} DEFEATED! Starting Post-Boss Quiz.`);
+        gameState.bossActive = false; // Reset the boss state
+        
+        // NO INCREMENT HERE! The next phase is the Quiz.
+        startQuiz(); 
+        return; 
+    }
+    
+    // 3. Normal Wave Progression
+    
+    // Check if the *next* wave number will be a multiple of 5 (e.g., current is 4, next is 5; current is 9, next is 10)
+    if ((waveCleared + 1) % 5 === 0) {
+        // Wave 4, 9, etc. cleared -> Next is Shop -> Quiz -> Boss
+        console.log(`Wave ${waveCleared} cleared. Starting SHOP (Pre-Boss Prep).`);
+        // NO INCREMENT HERE!
+        startShop(); 
+    } else {
+        // Wave 1, 2, 3, 6, 7, 8, etc. cleared -> Next is Quiz -> Wave N+1
+        console.log(`Wave ${waveCleared} cleared. Starting QUIZ.`);
+        // NO INCREMENT HERE!
+        startQuiz(); 
+    }
+    
+    updateHUD(); 
 }
 
 // --- Boss Wave Functions ---
@@ -1474,8 +1908,12 @@ function startBossWave() {
     const bossHeight = bossPattern.length * PIXEL_SIZE;
     const startX = (GAME_WIDTH / 2) - (bossWidth / 2); // Center it
     
-    // ⭐️ CRITICAL FIX: Define bossData by looking it up in the constant map
+    // CRITICAL FIX: Define bossData by looking it up in the constant map
     const bossData = ALIEN_BOSS_DATA['boss-alien'];
+
+    //Reset and check for powerup spawn for this Boss Wave
+    gameState.powerupSpawnedInWave = false; 
+    checkPowerupSpawn(); // Check for powerup spawn
     
     gameState.aliens.push({
         x: startX,
@@ -1491,10 +1929,11 @@ function startBossWave() {
     gameState.isPaused = false;
     requestAnimationFrame(gameLoop);
 }
+
 // --- Initialization ---
 function init() {
     
-    // ⭐️ NEW: Load Next Run Bonus stats and apply them
+    //Load Next Run Bonus stats and apply them
     const savedBonusFR = parseFloat(localStorage.getItem('nextRunBonusFireRate')) || 0;
     const savedBonusSpeed = parseFloat(localStorage.getItem('nextRunBonusSpeed')) || 0;
     const savedBonusAmmo = parseInt(localStorage.getItem('nextRunBonusAmmo')) || 0;
@@ -1508,6 +1947,11 @@ function init() {
     // Set the permanent bonus level for display in the shop
     gameState.upgradeLevels.nextRunBonus = savedBonusLevel;
     // 1. Initial HUD call (Displays 10 Lives, 0 Score, 0 Ammo)
+    gameState.originalFireRate = gameState.fireRate;
+    gameState.originalBulletWidth = BULLET_WIDTH; // Capture the base bullet width
+    if (!gameState.waveNumber) {
+        gameState.waveNumber = 1; 
+    }
     updateHUD(); 
     generateStars();
     
